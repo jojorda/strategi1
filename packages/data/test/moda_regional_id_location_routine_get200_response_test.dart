@@ -1,0 +1,26 @@
+import 'package:test/test.dart';
+import 'package:strategi_mobile_api/strategi_mobile_api.dart';
+
+// tests for ModaRegionalIdLocationRoutineGet200Response
+void main() {
+  final instance = ModaRegionalIdLocationRoutineGet200ResponseBuilder();
+  // TODO add properties to the builder and call build()
+
+  group(ModaRegionalIdLocationRoutineGet200Response, () {
+    // bool status
+    test('to test the property `status`', () async {
+      // TODO
+    });
+
+    // String message
+    test('to test the property `message`', () async {
+      // TODO
+    });
+
+    // ModaRegionalIdLocationRoutineGet200ResponseData data
+    test('to test the property `data`', () async {
+      // TODO
+    });
+
+  });
+}

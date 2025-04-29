@@ -1,0 +1,83 @@
+name: Build APK
+run-name: ${{ gitea.actor }}
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs: 
+  build-strategi-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version: "3.27.1"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/gradle-build-action@v3
+
+      - name: Enable Gradle Caching
+        run: |
+          echo "org.gradle.daemon=true" >> ~/.gradle/gradle.properties
+          echo "org.gradle.parallel=true" >> ~/.gradle/gradle.properties
+          echo "org.gradle.caching=true" >> ~/.gradle/gradle.properties
+
+      - name: Cache Flutter Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
+      - name: Setup Secrets
+        run: |
+          echo ${{ secrets.KEY_PROPERTIES }} | base64 --decode > android/key.properties
+          echo ${{ secrets.JKS_SECRET }} | base64 --decode > android/app/${{ secrets.JKS_NAME }}
+          echo ${{ secrets.ENVIRONMENT }} | base64 --decode > .env
+
+      - name: Extract tag name
+        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Build APK
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          flutter build apk --release --split-per-abi
+          mkdir -p build/apk-releases
+          mv build/app/outputs/flutter-apk/*.apk build/apk-releases/
+
+      - name: Push Release
+        run: |
+          RELEASE_ID=$(curl -X POST "${{ secrets.APP_GITEA_REPO_API_URL }}/releases" \
+            -H "Authorization: token ${{ secrets.APP_GITEA_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tag_name": "${{ env.TAG_NAME }}",
+              "target_commitish": "development-test-build",
+              "name": "Release ${{ env.TAG_NAME }}",
+              "body": "Release Build APK ${{ env.TAG_NAME }}",
+              "draft": false,
+              "prerelease": false
+            }' | jq -r '.id')
+          echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
+
+      - name: Upload APK Asset
+        run: |
+          find build/apk-releases -type f -name "*.apk" | xargs -I {} -P 4 curl -X POST "${{ secrets.APP_GITEA_REPO_API_URL }}/releases/${{ env.RELEASE_ID }}/assets" \
+            -H "Authorization: token ${{ secrets.APP_GITEA_TOKEN }}" \
+            -H "accept: application/json" \
+            -H "Content-Type: multipart/form-data" \
+            -F "attachment=@{};type=application/vnd.android.package-archive"

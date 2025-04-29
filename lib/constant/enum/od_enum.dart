@@ -1,0 +1,1 @@
+enum OdEnum { origin, destination }
