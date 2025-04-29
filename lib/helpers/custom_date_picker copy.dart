@@ -36,12 +36,8 @@ class CustomDatePicker {
             ? PickerDateRange(initialDates[0], initialDates[1])
             : null;
 
-    // Pisahkan logika validasi dan buat fungsi khusus untuk masing-masing tipe
-    bool validateDateSelection(PickDateType type, DateTime? start, DateTime? end) {
-      if (start == null) return true; // Tidak ada tanggal yang dipilih, lanjutkan
-
-      if (type == PickDateType.week && end == null) {
-        // Untuk week: validasi minimal 2 hari (start & end harus ada)
+    void handleSelect() {
+      if (type == PickDateType.week && selectedDate1 != null && selectedDate2 == null) {
         Get.dialog(
           Dialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -67,19 +63,38 @@ class CustomDatePicker {
             ),
           ),
         );
-        return false; // Gagal validasi
-      }
-
-      return true; // Lolos validasi
-    }
-
-    void handleSelect() {
-      // Pertama, validasi berdasarkan tipe
-      if (!validateDateSelection(type, selectedDate1, selectedDate2)) {
         return;
       }
       
-      // Validasi maxRange tetap sama untuk semua tipe
+      if (type == PickDateType.year && selectedDate1 != null && selectedDate2 != null) {
+        Get.dialog(
+          Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: AppColors.whiteColor,
+            child: Container(
+              padding: EdgeInsets.all(Sizes.s20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Rentang waktu yang dapat dipilih adalah 1 tahun. Untuk melihat grafik bulanan dalam rentang waktu lebih dari 1 tahun, anda dapat mengakses Strategi Hub Versi Web',
+                    textAlign: TextAlign.center,
+                    style: Get.textTheme.bodyMedium!.copyWith(color: AppColors.blackColor),
+                  ),
+                  SizedBox(height: Sizes.s16),
+                  CustomPrimaryButton(
+                    text: 'Oke',
+                    onPress: () => Get.back(),
+                    bgColor: Color(0xFF8A0D39)
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        return;
+      }
+      
       if (maxRange != null &&
           selectedDate1 != null &&
           selectedDate2 != null &&
@@ -269,56 +284,12 @@ class CustomDatePicker {
                     child: SfDateRangePicker(
                       backgroundColor: AppColors.whiteColor,
                       selectionMode: DateRangePickerSelectionMode.range,
-                      onSelectionChanged: (DateRangePickerSelectionChangedArgs args) {
-                        if (args.value is PickerDateRange) {
-                          final PickerDateRange range = args.value;
-                          selectedDate1 = range.startDate;
-                          selectedDate2 = range.endDate;
-                          
-                          // Periksa apakah rentang waktu melebihi 1 tahun
-                          if (selectedDate1 != null && selectedDate2 != null) {
-                            final difference = selectedDate2!.difference(selectedDate1!).inDays;
-                            if (difference > 365) {
-                              Get.dialog(
-                                Dialog(
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  backgroundColor: AppColors.whiteColor,
-                                  child: Container(
-                                    padding: EdgeInsets.all(Sizes.s20),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          'Rentang waktu yang dapat dipilih adalah 1 tahun. Untuk melihat grafik bulanan dalam rentang waktu lebih dari 1 tahun, anda dapat mengakses Strategi Hub Versi Web',
-                                          textAlign: TextAlign.center,
-                                          style: Get.textTheme.bodyMedium!.copyWith(color: AppColors.blackColor),
-                                        ),
-                                        SizedBox(height: Sizes.s16),
-                                        CustomPrimaryButton(
-                                          text: 'Oke',
-                                          onPress: () => Get.back(),
-                                          bgColor: Color(0xFF8A0D39)
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                              // Reset selection jika melebihi 1 tahun
-                              selectedDate2 = null;
-                            }
-                          }
-                          
-                          final String startDate = range.startDate != null
-                              ? '${range.startDate!.day}/${range.startDate!.month}/${range.startDate!.year}'
-                              : '';
-                          final String endDate = range.endDate != null
-                              ? '${range.endDate!.day}/${range.endDate!.month}/${range.endDate!.year}'
-                              : '';
-                          selectedDate.value = '$startDate - $endDate';
-                        }
-                      },
+                      onSelectionChanged: onSelectionChanged,
                       initialSelectedRange: initialRange,
+                      // selectableDayPredicate: (DateTime date) {
+                      //   final now = DateTime.now();
+                      //   return date.year <= now.year && date.month <= now.month;
+                      // },
                       headerStyle: DateRangePickerHeaderStyle(
                           textStyle: Get.textTheme.bodyLarge,
                           backgroundColor: AppColors.whiteColor),

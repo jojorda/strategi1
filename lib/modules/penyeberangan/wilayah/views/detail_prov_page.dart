@@ -227,7 +227,7 @@ class DetailProvPage extends GetView<DetailProvController> {
                           Text(
                             // "Simpul Angkutan Penyeberangan",
                             // getTitle(modaType),
-                            "ASDP",
+                            "Penyeberangan",
                             style: Get.textTheme.titleSmall!.copyWith(
                               fontSize:
                                   isUnfolded ? 14 : (isSmallScreen ? 12 : 14),
