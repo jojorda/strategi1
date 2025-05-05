@@ -236,7 +236,7 @@ class PenyeberanganAgregat extends GetView<PenyeberanganController> {
                   ? trafficData.vehicleDeparture
                   : trafficData.departure,
             ),
-            label: 'Berangkat',
+            label: 'Berangkatsss',
           ),
           // const SizedBox(width: 20),
           // _buildLegendItem(
@@ -458,7 +458,8 @@ class PenyeberanganAgregat extends GetView<PenyeberanganController> {
               // Format tahun ke 2 digit (2025 -> 25)
               String year = (dateTime.year % 100).toString();
               
-              return '$month$year';
+              // return '$month$year';
+              return '$month';
             } else {
               // Coba ekstrak dari format yang mungkin sudah berisi informasi bulan dan tahun
               // Format pertama: "yyyy-MM" atau "yyyy/MM"
@@ -485,7 +486,8 @@ class PenyeberanganAgregat extends GetView<PenyeberanganController> {
                   default: monthName = 'Jan';
                 }
                 
-                return '$monthName$year';
+                return '$monthName';
+                // return '$monthName$year';
               }
               
               // Format kedua: "yyyy-Q" (kuarter)

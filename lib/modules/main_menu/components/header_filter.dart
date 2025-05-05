@@ -133,6 +133,14 @@ class HeaderFilter extends StatelessWidget {
       groupValue: rangeGroupvalue.value,
       onChanged: (val) {
         rangeGroupvalue.value = val!;
+        
+        // Ketika radio button bulanan dipilih (index 2), set rentang waktu default Jan-Des tahun berjalan
+        if (val == 2) {
+          final currentYear = DateTime.now().year;
+          final startDate = DateTime(currentYear, 1, 1); // 1 Januari tahun ini
+          final endDate = DateTime(currentYear, 12, 31); // 31 Desember tahun ini
+          onSelectedDate(startDate, endDate);
+        }
       },
       title: title,
     );
@@ -241,6 +249,7 @@ class HeaderFilter extends StatelessWidget {
       type: pickDateType,
       onSelectedDate: onSelectedDate,
       initialDates: initialDates?.value,
+      radioButtonIndex: rangeGroupvalue.value,
     );
   }
 

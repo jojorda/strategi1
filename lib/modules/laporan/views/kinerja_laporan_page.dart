@@ -152,6 +152,24 @@ class KinerjaLaporanPage extends GetView<KinerjaLaporanController> {
                 ],
               ),
             ),
+            // TODO: remove when navigation to status laporan already implemented
+            SizedBox(height: 10),
+            Obx(
+              () => [ModaType.jalan, ModaType.laut, ModaType.asdp].any(
+                (moda) => controller.selectedModa.value == moda.getModaName(),
+              )
+                  ? ElevatedButton(
+                      onPressed: () {
+                        Get.toNamed(StatusPelaporanScreen.routeName,
+                            arguments: {
+                              'moda': controller.selectedModa.value,
+                            });
+                      },
+                      child: Text('Status Laporan'),
+                    )
+                  : SizedBox(),
+            ),
+
             SizedBox(height: Sizes.s24),
           ],
         ),

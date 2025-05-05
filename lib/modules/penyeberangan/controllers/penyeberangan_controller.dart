@@ -122,7 +122,14 @@ class PenyeberanganController extends GetxController
       fetchData(false);
       handleOnUpdateIsRoutine();
     });
-    ever(selectedFilter, (_) => fetchData(false));
+    ever(selectedFilter, (_) {
+      // Ketika filter bulanan dipilih (index 2), set rentang waktu default Jan-Des tahun berjalan
+      if (selectedFilter.value == 2 && isRoutine.value) {
+        setJanDecYearRange();
+      } else {
+        fetchData(false);
+      }
+    });
     ever(selectedRoutineRange, (_) => fetchData(true));
     ever(selectedIncidentRange, (_) => fetchData(true));
     ever(selectedProminentIncidentRange, (_) => fetchData(true));
@@ -155,6 +162,24 @@ class PenyeberanganController extends GetxController
 
     selectedProminentIncidentRange.value = initialDate;
     selectedProminentIncidentDateRange.value = initialDateString;
+  }
+
+  // Fungsi untuk mengatur rentang waktu dari Januari hingga Desember tahun berjalan
+  void setJanDecYearRange() {
+    final currentYear = DateTime.now().year;
+    final startDate = DateTime(currentYear, 1, 1); // 1 Januari tahun ini
+    final endDate = DateTime(currentYear, 12, 31); // 31 Desember tahun ini
+    
+    selectedRoutineRange.value = [startDate, endDate];
+    updateFilterDate(startDate, endDate);
+  }
+
+  void updateFilterDate(DateTime? startDate, DateTime? endDate) {
+    if (startDate != null && endDate != null) {
+      selectedRoutineRange.value = [startDate, endDate];
+      _updateDateRangeLabel();
+      fetchData(true);
+    }
   }
 
   List<PenyebranganEnum> getMenuList() {
@@ -585,14 +610,6 @@ class PenyeberanganController extends GetxController
     });
 
     return completer.future;
-  }
-
-  void updateFilterDate(DateTime? startDate, DateTime? endDate) {
-    if (startDate != null && endDate != null) {
-      selectedRoutineRange.value = [startDate, endDate];
-      _updateDateRangeLabel();
-      fetchData(true);
-    }
   }
 
   void handleOnSelectedEvent(Event? event) {

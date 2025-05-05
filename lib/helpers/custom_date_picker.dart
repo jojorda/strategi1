@@ -11,6 +11,7 @@ class CustomDatePicker {
       {required Function(DateTime?, DateTime?) onSelectedDate,
       required PickDateType type,
       int? maxRange,
+      int? radioButtonIndex,
       List<DateTime?>? initialDates}) {
     RxString selectedDate = '-'.obs;
     DateTime? selectedDate1;
@@ -19,6 +20,50 @@ class CustomDatePicker {
     void onSelectionChanged(DateRangePickerSelectionChangedArgs args) {
       if (args.value is PickerDateRange) {
         final PickerDateRange range = args.value;
+        
+        // Khusus untuk bulanan (radioButtonIndex == 2), validasi tahun maksimal 1
+        if (radioButtonIndex == 2 && range.startDate != null && range.endDate != null) {
+          // Jika tahun awal dan akhir berbeda lebih dari 1
+          if (range.endDate!.year - range.startDate!.year > 0) {
+            // Tampilkan dialog peringatan
+            Get.dialog(
+              Dialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                backgroundColor: AppColors.whiteColor,
+                child: Container(
+                  padding: EdgeInsets.all(Sizes.s20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Rentang waktu yang dapat dipilih adalah 1 tahun. Untuk melihat grafik bulanan dalam rentang waktu lebih dari 1 tahun, anda dapat mengakses Strategi Hub Versi Web',
+                        textAlign: TextAlign.center,
+                        style: Get.textTheme.bodyMedium!.copyWith(color: AppColors.blackColor),
+                      ),
+                      SizedBox(height: Sizes.s16),
+                      CustomPrimaryButton(
+                        text: 'Oke',
+                        onPress: () => Get.back(),
+                        bgColor: Color(0xFF8A0D39)
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+            // Gunakan bulan terakhir dari tahun yang sama sebagai endDate
+            final DateTime lastMonthSameYear = DateTime(range.startDate!.year, 12, 31);
+            selectedDate1 = range.startDate;
+            selectedDate2 = lastMonthSameYear;
+            
+            final String startDate = '${selectedDate1!.day}/${selectedDate1!.month}/${selectedDate1!.year}';
+            final String endDate = '${selectedDate2!.day}/${selectedDate2!.month}/${selectedDate2!.year}';
+            selectedDate.value = '$startDate - $endDate';
+            return;
+          }
+        }
+        
+        // Kalau tidak masalah, set nilai normal
         selectedDate1 = range.startDate;
         selectedDate2 = range.endDate;
         final String startDate = range.startDate != null
@@ -36,12 +81,58 @@ class CustomDatePicker {
             ? PickerDateRange(initialDates[0], initialDates[1])
             : null;
 
-    // Pisahkan logika validasi dan buat fungsi khusus untuk masing-masing tipe
-    bool validateDateSelection(PickDateType type, DateTime? start, DateTime? end) {
-      if (start == null) return true; // Tidak ada tanggal yang dipilih, lanjutkan
-
-      if (type == PickDateType.week && end == null) {
-        // Untuk week: validasi minimal 2 hari (start & end harus ada)
+    void handleSelect() {
+      // Biarkan validasi date range sesuai tipe berjalan normal
+      if (selectedDate1 != null && selectedDate2 != null) {
+        // Validasi untuk mode bulanan (tambahan validasi khusus)
+        if (radioButtonIndex == 2) {
+          // Jika tahun awal dan akhir berbeda lebih dari 1
+          if (selectedDate2!.year - selectedDate1!.year > 0) {
+            Get.dialog(
+              Dialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                backgroundColor: AppColors.whiteColor,
+                child: Container(
+                  padding: EdgeInsets.all(Sizes.s20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Rentang waktu yang dapat dipilih adalah 1 tahun. Untuk melihat grafik bulanan dalam rentang waktu lebih dari 1 tahun, anda dapat mengakses Strategi Hub Versi Web',
+                        textAlign: TextAlign.center,
+                        style: Get.textTheme.bodyMedium!.copyWith(color: AppColors.blackColor),
+                      ),
+                      SizedBox(height: Sizes.s16),
+                      CustomPrimaryButton(
+                        text: 'Oke',
+                        onPress: () => Get.back(),
+                        bgColor: Color(0xFF8A0D39)
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+            return;
+          }
+        }
+        
+        // Validasi maxRange yang sudah ada
+        if (maxRange != null && selectedDate2!.difference(selectedDate1!).inDays + 1 > maxRange) {
+          Get.snackbar(
+            'Invalid Selection',
+            'The selected date range cannot exceed $maxRange days.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+          return;
+        }
+        
+        onSelectedDate(selectedDate1, selectedDate2);
+        Get.back();
+      } else if (selectedDate1 != null && selectedDate2 == null && type == PickDateType.week) {
+        // Khusus untuk PickDateType.week, tampilkan dialog jika hanya ada satu tanggal
         Get.dialog(
           Dialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -67,31 +158,9 @@ class CustomDatePicker {
             ),
           ),
         );
-        return false; // Gagal validasi
-      }
-
-      return true; // Lolos validasi
-    }
-
-    void handleSelect() {
-      // Pertama, validasi berdasarkan tipe
-      if (!validateDateSelection(type, selectedDate1, selectedDate2)) {
         return;
-      }
-      
-      // Validasi maxRange tetap sama untuk semua tipe
-      if (maxRange != null &&
-          selectedDate1 != null &&
-          selectedDate2 != null &&
-          selectedDate2!.difference(selectedDate1!).inDays + 1 > maxRange) {
-        Get.snackbar(
-          'Invalid Selection',
-          'The selected date range cannot exceed $maxRange days.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
       } else {
+        // Jika tidak ada tanggal yang dipilih, tetap tutup dialog
         onSelectedDate(selectedDate1, selectedDate2);
         Get.back();
       }
@@ -192,10 +261,6 @@ class CustomDatePicker {
                       selectionMode: DateRangePickerSelectionMode.range,
                       onSelectionChanged: onSelectionChanged,
                       initialSelectedRange: initialRange,
-                      // selectableDayPredicate: (DateTime date) {
-                      //   final now = DateTime.now();
-                      //   return date.year <= now.year && date.month <= now.month;
-                      // },
                       headerStyle: DateRangePickerHeaderStyle(
                           textStyle: Get.textTheme.bodyLarge,
                           backgroundColor: AppColors.whiteColor),
@@ -253,7 +318,6 @@ class CustomDatePicker {
         ));
         break;
       case PickDateType.year:
-        var type = PickDateType.year;
         Get.dialog(Dialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -269,55 +333,7 @@ class CustomDatePicker {
                     child: SfDateRangePicker(
                       backgroundColor: AppColors.whiteColor,
                       selectionMode: DateRangePickerSelectionMode.range,
-                      onSelectionChanged: (DateRangePickerSelectionChangedArgs args) {
-                        if (args.value is PickerDateRange) {
-                          final PickerDateRange range = args.value;
-                          selectedDate1 = range.startDate;
-                          selectedDate2 = range.endDate;
-                          
-                          // Periksa apakah rentang waktu melebihi 1 tahun
-                          if (selectedDate1 != null && selectedDate2 != null) {
-                            final difference = selectedDate2!.difference(selectedDate1!).inDays;
-                            if (difference > 365) {
-                              Get.dialog(
-                                Dialog(
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  backgroundColor: AppColors.whiteColor,
-                                  child: Container(
-                                    padding: EdgeInsets.all(Sizes.s20),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          'Rentang waktu yang dapat dipilih adalah 1 tahun. Untuk melihat grafik bulanan dalam rentang waktu lebih dari 1 tahun, anda dapat mengakses Strategi Hub Versi Web',
-                                          textAlign: TextAlign.center,
-                                          style: Get.textTheme.bodyMedium!.copyWith(color: AppColors.blackColor),
-                                        ),
-                                        SizedBox(height: Sizes.s16),
-                                        CustomPrimaryButton(
-                                          text: 'Oke',
-                                          onPress: () => Get.back(),
-                                          bgColor: Color(0xFF8A0D39)
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                              // Reset selection jika melebihi 1 tahun
-                              selectedDate2 = null;
-                            }
-                          }
-                          
-                          final String startDate = range.startDate != null
-                              ? '${range.startDate!.day}/${range.startDate!.month}/${range.startDate!.year}'
-                              : '';
-                          final String endDate = range.endDate != null
-                              ? '${range.endDate!.day}/${range.endDate!.month}/${range.endDate!.year}'
-                              : '';
-                          selectedDate.value = '$startDate - $endDate';
-                        }
-                      },
+                      onSelectionChanged: onSelectionChanged,
                       initialSelectedRange: initialRange,
                       headerStyle: DateRangePickerHeaderStyle(
                           textStyle: Get.textTheme.bodyLarge,
